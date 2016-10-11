@@ -60,9 +60,15 @@ function main(data){
 
 	for(var s in availableBikes){
 		if(availableBikes[s]){
-			var bikes = availableBikes[s].map(function(item){
+			// Sort the checks
+			var bike_checks = availableBikes[s].sort(function(a, b){
+				return a.timestamp - b.timestamp;
+			});
+			// Return the number of bikes at each check
+			var bikes = bike_checks.map(function(item){
 				return item.bikes;
 			});
+			// Add the bike counts to the plot
 			traces.push({
 				name: "Station #" + s,
 				//marker: marker: {color: 'rgba(93, 20, 73, 1)'},
