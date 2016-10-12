@@ -1,4 +1,4 @@
-var graffitiURL = "https://data.cityofchicago.org/resource/eq45-8inv.json"
+var graffitiURL = "https://data.cityofchicago.org/resource/4ijn-s7e5.json"
 var SECRET_TOKEN = "Le00VXF0GK0d8D1tTn2v6Vkpl";
 
 
@@ -19,66 +19,73 @@ function getData(query, callback, limit){
 	});
 }
 
-var LIMIT = 50;
+var LIMIT = 20000;
 
-getData({id: "174"}, function(data){
-	console.log(data);
+getData({}, function(data){
 	main(data);
 }, LIMIT);
 
 function main(data){
-
-	var availableBikes = {};
+	
+	var graphData = {};
+	var riskData = {};
 
 	for(var b = 0; b < data.length; b++){
 		var entry = data[b];
-		var dataPoint = {
-			time: entry.timestamp,
-			bikes: entry.available_bikes
-		};
-		if(availableBikes[entry.id]){
-			availableBikes[entry.id].push(dataPoint);
-		}
-		else{
-			availableBikes[entry.id] = [dataPoint];
-		}
-	}
+		var result = entry.results;
+		if (result == "Out of Business") {
+			//Black magic that Vinesh just added
+			if(entry.inspection_type in graphData){
+				graphData[entry.inspection_type]++;
+			}
+			else{
+				graphData[entry.inspection_type] = 1
+			}
 
-	var X_AXIS = [];
-	for(var x = 1; x <= LIMIT; x++){
-		X_AXIS.push(x);
-	}
-				
-	var layout = {
-		xaxis: {title: 'Check'},
-		yaxis: {title: 'Bikes'},
-		showLegend: false,
-		margin: {t: 0}
-	}
-
-	var traces = [];
-
-	for(var s in availableBikes){
-		if(availableBikes[s]){
-			// Sort the checks
-			var bike_checks = availableBikes[s].sort(function(a, b){
-				return a.timestamp - b.timestamp;
-			});
-			// Return the number of bikes at each check
-			var bikes = bike_checks.map(function(item){
-				return item.bikes;
-			});
-			// Add the bike counts to the plot
-			traces.push({
-				name: "Station #" + s,
-				//marker: marker: {color: 'rgba(93, 20, 73, 1)'},
-				x: X_AXIS,
-				y: bikes
-			});
+			//Black magic that Vinesh just added
+			if(entry.risk in riskData){
+				riskData[entry.risk]++;
+			}
+			else{
+				riskData[entry.risk] = 1
+			}
 		}
 	}
+console.log(graphData);
 
-	var plot = document.getElementById('plot');
-	Plotly.plot(plot, traces, layout);
+var x_axis = [];
+var y_axis = [];
+for(var type in graphData){
+	if(graphData[type]){
+		x_axis.push(type);
+		y_axis.push(graphData[type]);
+	}
+}
+
+var z_axis = [];
+for (var otherType in riskData){
+	if(riskData[otherType]){
+		z_axis.push(otherType);
+	}
+}
+
+var data = [
+  {
+    x: ["Canvass",'Complaint'],
+    y: [graphData["Canvass"],graphData["Complaint"]],
+    type: 'bar'
+  }
+];
+
+var data2 = [
+  {
+    x: x_axis,
+    y: y_axis,
+    z: z_axis,
+    type: 'scatter3d'
+  }
+];
+
+Plotly.newPlot('plot', data2);
 
 }
